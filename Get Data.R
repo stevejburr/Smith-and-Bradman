@@ -63,7 +63,35 @@ steve_smith <- get_rolling_averages(267192)
 
 
 
-steve_smith %>%  
+url <- "http://stats.espncricinfo.com/ci/content/records/282910.html"
+tables <-readHTMLTable(url, stringsAsFactors = F)
+tables
+
+# want a list of top averaging players with cricinfo ids
+doc <- htmlParse(url)
+links <- xpathSApply(doc, "//a",saveXML)
+free(doc)
+
+links %>% 
+  as.data.frame() %>% 
+  mutate(player_data=str_match(`.`,"\\/player\\/[0-9]+"),
+         player_id=str_remove(player_data,"\\/player\\/"),
+         player_name=str_match(`.`,">[a-zA-Z \\-\\.]+<\\/a>"),
+         player_name=str_remove(player_name,"<\\/a>"),
+         player_name=str_remove(player_name,">")) %>%
+  filter(!is.na(player_data)) %>%
+  select(player_id,player_name) -> top_average_players
+
+top_average_players 
+
+top_average_players %>%
+  pull(player_id) -> ids
+
+all_records <- map_dfr(ids, get_rolling_averages)
+
+saveRDS(all_records,"all_records.rds")
+
+all_records %>%  
 ggplot() +
   geom_line(aes(group=1,x=CumInnings,y=CumAverage_10))
 
@@ -76,13 +104,31 @@ steve_smith %>%
   geom_line(aes(group=1,x=CumInnings,y=CumAverage))
 
 
-rbind(bradman,steve_smith) %>%
+all_records%>%
   ggplot() +
   geom_line(aes(group=player,colour=player,x=CumInnings,y=CumAverage)) +
   geom_hline(aes(yintercept=100))
 
 
-rbind(bradman,steve_smith) %>%
+all_records %>%
   ggplot() +
-  geom_line(aes(group=player,colour=player,x=CumInnings,y=CumAverage)) +
+  geom_line(aes(group=player,colour=player,x=CumInnings,y=CumAverage_20)) +
   geom_hline(aes(yintercept=100))
+
+
+all_records %>%
+  ggplot() +
+  geom_line(aes(group=player,colour=player,x=CumInnings,y=CumAverage_10)) +
+  geom_hline(aes(yintercept=100))
+
+
+#get best 20 innings average for all top average players:
+
+all_records %>%
+  group_by(player) %>%
+  filter(CumAverage_20==max(CumAverage_20,na.rm=T)) %>%
+  ungroup() %>%
+  select(player,CumAverage_20) %>%
+  arrange(-CumAverage_20) %>%
+  left_join(top_average_players,
+            by=c("player"="player_id"))
