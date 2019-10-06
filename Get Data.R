@@ -48,7 +48,10 @@ get_rolling_averages <- function(id) {
            CumAverage_10=CumRuns_10/CumOuts_10,
            CumRuns_20=roll_sum(Runs,20,align="right",fill=NA),
            CumOuts_20=roll_sum(out,20,align="right",fill=NA),
-           CumAverage_20=CumRuns_20/CumOuts_20
+           CumAverage_20=CumRuns_20/CumOuts_20,
+           CumRuns_50=roll_sum(Runs,50,align="right",fill=NA),
+           CumOuts_50=roll_sum(out,50,align="right",fill=NA),
+           CumAverage_50=CumRuns_50/CumOuts_50,
            ) -> table
   
   table$player <- id
