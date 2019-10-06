@@ -89,6 +89,9 @@ top_average_players %>%
 
 all_records <- map_dfr(ids, get_rolling_averages)
 
+all_records %>%
+  left_join(top_average_players,by=c("player"="player_id")) -> all_records
+
 saveRDS(all_records,"all_records.rds")
 
 all_records %>%  
